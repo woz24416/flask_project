@@ -6,8 +6,8 @@ from flask.ext.bootstrap import Bootstrap
 from flask.ext.moment import Moment
 from datetime import datetime
 from flask.ext.wtf import Form
-from wtforms import StringField, SubmitField
-from wtforms.validators import Required
+from wtforms import StringField, SubmitField, IntegerField
+from wtforms.validators import Required, Length, NumberRange
 
 app = Flask(__name__) 
 #程序实例app是Flask类的对象
@@ -22,7 +22,8 @@ app.config['SECRET_KEY'] = 'just do it'
 class NameForm(Form):
 	#每个字段都是一个对象，是一个相应字段类型的对象
 	#validators是一个由验证函数组成的列表
-	name = StringField('What is your name?', validators=[Required()]) #字段对象可附属一个或多个验证函数，
+	name = StringField('What is your name?', validators=[Required(), Length(min=4, max=25)]) #字段对象可附属一个或多个验证函数，
+	number = IntegerField('Enter 4 to 25 numbers:', validators=[NumberRange(min=4, max=25)])
 	#字段构造函数的第一个参数是把表单渲染成HTML时使用的标号
 	submimt = SubmitField('Submit')
 	#表单类中的字段是可调用的，在模版中调用后会渲染成HTML
@@ -37,8 +38,10 @@ def index():
 	form = NameForm()
 	if form.validate_on_submit():
 		name = form.name.data
+		number = form.number.data
 		form.name.data = ''
-	return render_template('index.html', current_time=datetime.utcnow(), form=form, name=name)
+		form.number.data=''
+	return render_template('index.html', current_time=datetime.utcnow(), form=form, name=name,number=number)
 
 @app.route('/user/<name>') #尖括号中的内容就是动态部分,任何能匹配静态部分的 URL 都会映射到这个路由上 
 def user(name): #调用视图函数时,Flask会将动态部分作为参数传入函数 
