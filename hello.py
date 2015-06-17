@@ -24,6 +24,26 @@ def user(name): #调用视图函数时,Flask会将动态部分作为参数传入
 	#左边的name为模版中占位变量；右边的name为当前作用域中的变量
 	return render_template('user.html', name=name)
 
+#Flask允许程序使用基于模版的自定义错误页面
+#最常见的错误有两个：404客户端请求位置页面；500处理异常
+@app.errorhandler(404)
+def page_not_found(e):
+	return render_template('404.html'), 404
+
+@app.errorhandler(500)
+def internal_server_error(e):
+	return render_template('500.html'), 500
+
+'''
+Flask使用url_for()函数生成URL，它的第一个参数是视图函数的名称
+第二个可选参数 _external=True的话，返回的是绝对地址。一般在生成浏览器之外的链接时使用，例如邮件
+在生成动态地址时，动态部分作为关键字参数传入:url_for('index', name='mark', page=2 )返回的结果是:/mark/?page=2
+'''
+'''
+静态文件多为JS和图片，一般存放在static的子目录中。如有需要可再设置更深一层子目录
+url_for('static', filename='css/style.css')得到的结果是：static/css/style.css
+在模版中存放图片路径链接为：href=" {{url_for('static', filename='img/favicon.ico')}} "
+'''
 
 if __name__ == '__main__':
 	app.run(debug=True)
