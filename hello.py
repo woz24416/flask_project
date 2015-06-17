@@ -3,19 +3,42 @@
 from flask import Flask, render_template
 from flask.ext.script import Manager
 from flask.ext.bootstrap import Bootstrap
+from flask.ext.moment import Moment
+from datetime import datetime
+from flask.ext.wtf import Form
+from wtforms import StringField, SubmitField
+from wtforms.validators import Required
 
 app = Flask(__name__) 
 #程序实例app是Flask类的对象
 #Flask使用__name__这个变量来决定程序的根目录，以便能够找到相对于程序根目录的资源文件的位置
 manager = Manager(app)
 bootstrap = Bootstrap(app)
+moment = Moment(app)
+#app.config字典可用来存储配置变量；除了明文外，还可以从环境中导入配置值
+app.config['SECRET_KEY'] = 'just do it'
+
+#每个web表单都由一个继承自Formd的类表示
+class NameForm(Form):
+	#每个字段都是一个对象，是一个相应字段类型的对象
+	#validators是一个由验证函数组成的列表
+	name = StringField('What is your name?', validators=[Required()]) #字段对象可附属一个或多个验证函数，
+	#字段构造函数的第一个参数是把表单渲染成HTML时使用的标号
+	submimt = SubmitField('Submit')
+	#表单类中的字段是可调用的，在模版中调用后会渲染成HTML
+	#在视图函数中通过参数将表单对象传入模版	
 
 #修饰器是Python语言的标准特性，其作用是：可以使用不同的方式修改函数的行为
 #在这里是使用修饰器把函数注册为事件的处理程序
 #下例就是把index()函数注册为程序根地址的处理程序
-@app.route('/')
+@app.route('/', methods=['GET', 'POST']) #如果没有指定methods参数的话，flask就只会把视图函数注册为GET请求的处理程序
 def index():
-	return render_template('index.html')
+	name = None
+	form = NameForm()
+	if form.validate_on_submit():
+		name = form.name.data
+		form.name.data = ''
+	return render_template('index.html', current_time=datetime.utcnow(), form=form, name=name)
 
 @app.route('/user/<name>') #尖括号中的内容就是动态部分,任何能匹配静态部分的 URL 都会映射到这个路由上 
 def user(name): #调用视图函数时,Flask会将动态部分作为参数传入函数 
