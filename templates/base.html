@@ -1,4 +1,10 @@
 {% extends "bootstrap/base.html" %}
+
+{% block scripts %}
+{{super()}}
+{{moment.include_moment()}}
+{% endblock %}
+
 {% block title %}Flask Development{% endblock %}
 {% block navbar %}
 <div class="navbar navbar-inverse" role="navigation">
