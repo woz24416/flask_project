@@ -2,11 +2,13 @@
 
 from flask import Flask, render_template
 from flask.ext.script import Manager
+from flask.ext.bootstrap import Bootstrap
 
 app = Flask(__name__) 
 #程序实例app是Flask类的对象
 #Flask使用__name__这个变量来决定程序的根目录，以便能够找到相对于程序根目录的资源文件的位置
 manager = Manager(app)
+bootstrap = Bootstrap(app)
 
 #修饰器是Python语言的标准特性，其作用是：可以使用不同的方式修改函数的行为
 #在这里是使用修饰器把函数注册为事件的处理程序
@@ -24,7 +26,7 @@ def user(name): #调用视图函数时,Flask会将动态部分作为参数传入
 
 
 if __name__ == '__main__':
-	manager.run()
+	app.run(debug=True)
 '''
 __name__=='__main__' 是 Python 的惯常用法
 在这里确保直接执行这个脚本时才启动开发Web服务器
