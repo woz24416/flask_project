@@ -9,19 +9,34 @@ from datetime import datetime
 from flask.ext.wtf import Form
 from wtforms import StringField, SubmitField, IntegerField
 from wtforms.validators import Required, Length, NumberRange
+from flask.ext.mail import Mail, Message
+from threading import Thread
 
+import os
 
 app = Flask(__name__) 
 #程序实例app是Flask类的对象
 #Flask使用__name__这个变量来决定程序的根目录，以便能够找到相对于程序根目录的资源文件的位置
-manager = Manager(app)
-bootstrap = Bootstrap(app)
-moment = Moment(app)
+
 #app.config字典可用来存储配置变量；除了明文外，还可以从环境中导入配置值
 app.config['SECRET_KEY'] = 'just do it'
 app.config['SQLALCHEMY_DATABASE_URI'] = \
-	'mysql://root:65129377@127.0.0.1/test'
+	'mysql://root:mimimi@127.0.0.1/test'
 app.config['SQLALCHEMY_COMMIT_ON_TEARDOWN'] = True #每次请求结束后都会自动提交数据库中的变化
+app.config['MAIL_SERVER'] = 'smtp.163.com'
+app.config['MAIL_PORT'] = 25
+app.config['MAIL_USERNAME'] = 'xxx' #最好使用环境变量读取
+app.config['MAIL_PASSWORD'] = 'xxx' #同上
+app.config['FLASK_MAIL_SENDER'] = 'xxx <xxx@gmail.com>'
+
+# 邮件群发列表
+receiver_list = ['xxx@xxx.com', 'yyy@yyy.com', 'zzz@zzz.com']
+
+manager = Manager(app)
+bootstrap = Bootstrap(app)
+moment = Moment(app)
+mail = Mail(app)  # 一定要在app.config之后再实例化Mail，否则会出现不调用配置文件的而导致发送邮件时出现socket error
+
 db = SQLAlchemy(app)
 
 #每个web表单都由一个继承自Formd的类表示
@@ -67,6 +82,20 @@ def make_shell_context(): #此函数以字典形式注册了程序实例，数�
 # 将这些对象导入到shell当中
 manager.add_command("shell", Shell(make_context=make_shell_context))
 
+#异步发送mail-将发送邮件转移到后台
+def send_async_email(app, msg):
+	with app.app_context():
+		mail.send(msg)
+
+def send_email(to, subject, template, **kwargs):
+	msg = Message(subject, sender=app.config['FLASK_MAIL_SENDER'], recipients=[to])
+	msg.body = render_template(template + '.txt', **kwargs)
+	msg.html = render_template(template + '.html', **kwargs)
+	thr = Thread(target=send_async_email, args=[app, msg])
+	thr.start()
+	return thr
+
+
 #修饰器是Python语言的标准特性，其作用是：可以使用不同的方式修改函数的行为
 #在这里是使用修饰器把函数注册为事件的处理程序
 #下例就是把index()函数注册为程序根地址的处理程序
@@ -78,8 +107,9 @@ def index():
 		if user is None: #如果数据库中没有表单输入的数据
 			user = User(username=form.name.data) #将表单中的数据存入表中相应的字段
 			db.session.add(user) #将数据先写入会话中
-			#db.session.commit()  #提交会话，将数据写入数据库中
 			session['known'] = False
+			send_email('xxx@gmail.com', 'New User', 'mail/new_user', user=user) 
+			#电子邮件的模版中有一个模版参数是用户，因此调用send_email函数时要以关键字参数的形式传入用户
 		else:
 			session['known'] = True
 		session['name'] = form.name.data  #将表单中的数据写入session中便于用户跨页面调用
@@ -97,6 +127,7 @@ def user(name): #调用视图函数时,Flask会将动态部分作为参数传入
 	#随后的参数都是键值对，表示模版变量对应的真实值
 	#左边的name为模版中占位变量；右边的name为当前作用域中的变量
 	return render_template('user.html', name=name)
+
 
 #Flask允许程序使用基于模版的自定义错误页面
 #最常见的错误有两个：404客户端请求位置页面；500处理异常
